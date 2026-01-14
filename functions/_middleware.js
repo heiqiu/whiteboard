@@ -1,21 +1,24 @@
 /**
- * ESA Pages 中间件
+ * ESA 边缘函数
  * 处理白板数据的 API 请求
  * 
- * 路由: /api/whiteboard/*
+ * 使用标准 Edge Function 入口格式
+ * EdgeKV 必须在 fetch 函数或其调用的函数中使用
  */
 
-export async function onRequest(context) {
-  const { request, env } = context;
-  const url = new URL(request.url);
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
 
-  // 只处理 /api/whiteboard 路径
-  if (!url.pathname.startsWith('/api/whiteboard')) {
-    return context.next();
+    // 只处理 /api/whiteboard 路径
+    if (!url.pathname.startsWith('/api/whiteboard')) {
+      // 返回 404 或者传递给其他处理器
+      return new Response('Not Found', { status: 404 });
+    }
+
+    return handleWhiteboardAPI(request, env);
   }
-
-  return handleWhiteboardAPI(request, env);
-}
+};
 
 /**
  * 处理白板 API 请求
