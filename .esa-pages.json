@@ -1,0 +1,22 @@
+{
+  "name": "whiteboard-app",
+  "type": "vue",
+  "framework": "vite",
+  "build": {
+    "command": "npm run build",
+    "output": "dist",
+    "install": "npm install"
+  },
+  "runtime": {
+    "node_version": "18"
+  },
+  "routes": [
+    {
+      "path": "/api/whiteboard/*",
+      "function": "functions/_middleware.js"
+    }
+  ],
+  "env": {
+    "ESA_NAMESPACE": "whiteboard"
+  }
+}
