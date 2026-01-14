@@ -1,30 +1,24 @@
 // ESA 边缘存储 API 服务
-// 参考官方示例：直接使用 EdgeKV（部署到 ESA Pages 后自动可用）
-// EdgeKV 是平台内置的全局对象，无需 import
+// EdgeKV 只能在边缘函数的 fetch 或其调用的函数中使用
+// 不要在构造函数中初始化 EdgeKV，而是在每次请求处理时创建实例
 
 class ESAStorageAPI {
   constructor(config) {
-    this.namespace = config.namespace || 'whiteboard';
-    this.edgeKV = null;
-    this.initEdgeKV();
+    this.namespace = config?.namespace || 'whiteboard';
+    // 注意：不在构造函数中初始化 EdgeKV
   }
 
-  // 初始化 EdgeKV（参考官方示例）
-  initEdgeKV() {
+  // 每次调用时才创建 EdgeKV 实例（确保在 fetch 上下文中）
+  getEdgeKV() {
     try {
-      if (true) {
-        console.info('命名空间', this.namespace);
-        // 参考官方示例：const edgeKV = new EdgeKV({ namespace: "ns" });
-        this.edgeKV = new EdgeKV({ namespace: this.namespace });
-        console.log('EdgeKV 初始化成功');
-        return true;
-      } else {
-        console.warn('EdgeKV 不可用（本地开发环境）');
-        return false;
+      // EdgeKV 是边缘函数运行时的全局对象
+      if (typeof EdgeKV !== 'undefined') {
+        return new EdgeKV({ namespace: this.namespace });
       }
+      return null;
     } catch (e) {
-      console.error('EdgeKV 初始化错误:', e);
-      return false;
+      console.error('EdgeKV 创建失败:', e);
+      return null;
     }
   }
 
@@ -33,9 +27,11 @@ class ESAStorageAPI {
     return `whiteboard_${boardId}`;
   }
 
-  // 保存白板数据（参考官方示例）
+  // 保存白板数据（在 fetch 调用链中使用 EdgeKV）
   async saveWhiteboard(data, boardId = 'default') {
-    if (this.edgeKV) {
+    const edgeKV = this.getEdgeKV(); // 在请求处理中创建 EdgeKV 实例
+    
+    if (edgeKV) {
       try {
         const key = this.getWhiteboardKey(boardId);
         const dataToSave = {
@@ -44,9 +40,8 @@ class ESAStorageAPI {
           version: '1.0'
         };
         
-        // 参考官方示例：let data = await edgeKV.put("put_string", "string_value")
-        // if (data === undefined) { return "EdgeKV put success\n"; }
-        const result = await this.edgeKV.put(key, JSON.stringify(dataToSave));
+        // 参考官方示例：put 成功返回 undefined
+        const result = await edgeKV.put(key, JSON.stringify(dataToSave));
         
         if (result === undefined) {
           console.log('EdgeKV put success');
@@ -65,14 +60,16 @@ class ESAStorageAPI {
     }
   }
 
-  // 加载白板数据（参考官方示例）
+  // 加载白板数据（在 fetch 调用链中使用 EdgeKV）
   async loadWhiteboard(boardId = 'default') {
-    if (this.edgeKV) {
+    const edgeKV = this.getEdgeKV(); // 在请求处理中创建 EdgeKV 实例
+    
+    if (edgeKV) {
       try {
         const key = this.getWhiteboardKey(boardId);
         
-        // 参考官方示例：使用 get 方法，key 不存在时返回 undefined
-        const result = await this.edgeKV.get(key, { type: "text" });
+        // 参考官方示例：key 不存在时返回 undefined
+        const result = await edgeKV.get(key, { type: "text" });
         
         if (result === undefined) {
           console.log('EdgeKV 中没有数据');
@@ -92,14 +89,16 @@ class ESAStorageAPI {
     }
   }
 
-  // 删除白板数据（参考官方示例）
+  // 删除白板数据（在 fetch 调用链中使用 EdgeKV）
   async deleteWhiteboard(boardId = 'default') {
-    if (this.edgeKV) {
+    const edgeKV = this.getEdgeKV(); // 在请求处理中创建 EdgeKV 实例
+    
+    if (edgeKV) {
       try {
         const key = this.getWhiteboardKey(boardId);
         
         // 参考官方示例：delete 成功返回 true，失败返回 false
-        const result = await this.edgeKV.delete(key);
+        const result = await edgeKV.delete(key);
         
         if (result === true) {
           console.log('EdgeKV delete success');
