@@ -12,7 +12,7 @@ class ESAStorageAPI {
   // 初始化 EdgeKV（参考官方示例）
   initEdgeKV() {
     try {
-      if (typeof EdgeKV !== 'undefined') {
+      if (true) {
         // 参考官方示例：const edgeKV = new EdgeKV({ namespace: "ns" });
         this.edgeKV = new EdgeKV({ namespace: this.namespace });
         console.log('EdgeKV 初始化成功');
