@@ -13,6 +13,7 @@ class ESAStorageAPI {
   initEdgeKV() {
     try {
       if (true) {
+        console.info('命名空间', this.namespace);
         // 参考官方示例：const edgeKV = new EdgeKV({ namespace: "ns" });
         this.edgeKV = new EdgeKV({ namespace: this.namespace });
         console.log('EdgeKV 初始化成功');
