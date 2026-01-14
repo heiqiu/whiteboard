@@ -63,7 +63,6 @@ import WhiteboardToolbar from './components/WhiteboardToolbar.vue';
 import StickyNote from './components/StickyNote.vue';
 import WhiteboardSection from './components/WhiteboardSection.vue';
 import ColorPickerDialog from './components/ColorPickerDialog.vue';
-import { ESAStorageAPI } from './services/esaApi.js';
 import { useWhiteboardData } from './composables/useWhiteboardData.js';
 import { useDrag } from './composables/useDrag.js';
 import { useResize } from './composables/useResize.js';
@@ -80,8 +79,9 @@ export default {
     ColorPickerDialog
   },
   setup() {
-    // 初始化 ESA API
-    const esaAPI = new ESAStorageAPI(ESA_CONFIG);
+    // API 基础路径（调用边缘函数标准入口）
+    const API_BASE = '/api/whiteboard';
+    const DEFAULT_BOARD_ID = 'default';
 
     // 使用对话框
     const { 
@@ -111,11 +111,35 @@ export default {
       getDataSnapshot
     } = useWhiteboardData();
 
-    // 保存回调函数
+    // 保存回调函数（通过 HTTP 调用边缘函数标准入口）
     const saveCallback = async () => {
       const dataToSave = getDataSnapshot();
-      await esaAPI.saveWhiteboard(dataToSave, ESA_CONFIG.defaultBoardId);
-      console.log('白板数据已保存');
+      try {
+        // ✅ 通过 HTTP 调用边缘函数的 fetch 入口
+        const response = await fetch(`${API_BASE}/${DEFAULT_BOARD_ID}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(dataToSave)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('白板数据已保存:', result.message);
+      } catch (error) {
+        console.error('保存失败:', error);
+        // 降级到 localStorage
+        const key = `whiteboard_${DEFAULT_BOARD_ID}`;
+        localStorage.setItem(key, JSON.stringify({
+          ...dataToSave,
+          timestamp: new Date().toISOString(),
+          version: '1.0'
+        }));
+      }
     };
 
     // 使用自动保存
@@ -127,10 +151,17 @@ export default {
     // 使用调整大小功能
     const { startResize } = useResize(triggerAutoSave);
 
-    // 加载数据
+    // 加载数据（通过 HTTP 调用边缘函数标准入口）
     const loadWhiteboardData = async () => {
       try {
-        const data = await esaAPI.loadWhiteboard(ESA_CONFIG.defaultBoardId);
+        // ✅ 通过 HTTP 调用边缘函数的 fetch 入口
+        const response = await fetch(`${API_BASE}/${DEFAULT_BOARD_ID}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
         
         if (data.notes && data.notes.length > 0 || data.sections && data.sections.length > 0) {
           loadData(data);
@@ -141,7 +172,14 @@ export default {
         }
       } catch (error) {
         console.error('加载数据失败:', error);
-        initializeDefaultData();
+        // 降级到 localStorage
+        const key = `whiteboard_${DEFAULT_BOARD_ID}`;
+        const localData = localStorage.getItem(key);
+        if (localData) {
+          loadData(JSON.parse(localData));
+        } else {
+          initializeDefaultData();
+        }
       }
     };
 
