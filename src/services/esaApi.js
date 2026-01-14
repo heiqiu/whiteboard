@@ -11,6 +11,7 @@ class ESAStorageAPI {
   // 每次调用时才创建 EdgeKV 实例（确保在 fetch 上下文中）
   getEdgeKV() {
     try {
+      console.log('EdgeKV 创建中...', this.namespace);
       // EdgeKV 是边缘函数运行时的全局对象
       if (typeof EdgeKV !== 'undefined') {
         return new EdgeKV({ namespace: this.namespace });
