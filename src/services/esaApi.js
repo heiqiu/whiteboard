@@ -182,4 +182,88 @@ class ESAStorageAPI {
   }
 }
 
-export default ESAStorageAPI;
+// ========== 边缘函数标准入口 ==========
+// 符合 ESA 要求：export default { async fetch(request) { ... } }
+
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    
+    // CORS 预检请求
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
+        }
+      });
+    }
+
+    try {
+      // 创建存储服务实例
+      const storage = new ESAStorageAPI({ namespace: 'whiteboard' });
+      
+      // 解析路径
+      const pathname = url.pathname;
+      const boardIdMatch = pathname.match(/\/api\/whiteboard\/([^\/]+)/);
+      const boardId = boardIdMatch ? boardIdMatch[1] : 'default';
+      
+      const corsHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Content-Type': 'application/json'
+      };
+      
+      // GET - 读取数据
+      if (request.method === 'GET') {
+        const data = await storage.loadWhiteboard(boardId);
+        return new Response(JSON.stringify(data), {
+          status: 200,
+          headers: corsHeaders
+        });
+      }
+      
+      // POST/PUT - 保存数据
+      if (request.method === 'POST' || request.method === 'PUT') {
+        const data = await request.json();
+        const result = await storage.saveWhiteboard(data, boardId);
+        return new Response(JSON.stringify(result), {
+          status: 200,
+          headers: corsHeaders
+        });
+      }
+      
+      // DELETE - 删除数据
+      if (request.method === 'DELETE') {
+        const result = await storage.deleteWhiteboard(boardId);
+        return new Response(JSON.stringify(result), {
+          status: result.success ? 200 : 404,
+          headers: corsHeaders
+        });
+      }
+      
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405,
+        headers: corsHeaders
+      });
+      
+    } catch (error) {
+      return new Response(JSON.stringify({ 
+        error: 'Internal server error', 
+        message: error.message 
+      }), {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
+  }
+};
+
+// 同时导出类以便在其他地方使用
+export { ESAStorageAPI };

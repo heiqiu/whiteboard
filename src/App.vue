@@ -63,7 +63,7 @@ import WhiteboardToolbar from './components/WhiteboardToolbar.vue';
 import StickyNote from './components/StickyNote.vue';
 import WhiteboardSection from './components/WhiteboardSection.vue';
 import ColorPickerDialog from './components/ColorPickerDialog.vue';
-import ESAStorageAPI from './services/esaApi.js';
+import { ESAStorageAPI } from './services/esaApi.js';
 import { useWhiteboardData } from './composables/useWhiteboardData.js';
 import { useDrag } from './composables/useDrag.js';
 import { useResize } from './composables/useResize.js';
