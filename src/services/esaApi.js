@@ -1,87 +1,118 @@
 // ESA 边缘存储 API 服务
-// 前端通过 HTTP API 调用边缘函数来访问 EdgeKV
-// EdgeKV 只能在边缘函数 (functions/_middleware.js) 中使用
+// 参考官方示例：直接使用 EdgeKV（部署到 ESA Pages 后自动可用）
+// EdgeKV 是平台内置的全局对象，无需 import
+
 class ESAStorageAPI {
   constructor(config) {
     this.namespace = config.namespace || 'whiteboard';
-    // API 基础路径（部署后使用相对路径调用边缘函数）
-    this.apiBase = config.apiBase || '/api/whiteboard';
+    this.edgeKV = null;
+    this.initEdgeKV();
   }
 
-  // 生成白板数据的 Key
+  // 初始化 EdgeKV（参考官方示例）
+  initEdgeKV() {
+    try {
+      if (typeof EdgeKV !== 'undefined') {
+        // 参考官方示例：const edgeKV = new EdgeKV({ namespace: "ns" });
+        this.edgeKV = new EdgeKV({ namespace: this.namespace });
+        console.log('EdgeKV 初始化成功');
+        return true;
+      } else {
+        console.warn('EdgeKV 不可用（本地开发环境）');
+        return false;
+      }
+    } catch (e) {
+      console.error('EdgeKV 初始化错误:', e);
+      return false;
+    }
+  }
+
+  // 生成存储 Key
   getWhiteboardKey(boardId = 'default') {
     return `whiteboard_${boardId}`;
   }
 
-  // 保存白板数据 (通过 HTTP API 调用边缘函数)
+  // 保存白板数据（参考官方示例）
   async saveWhiteboard(data, boardId = 'default') {
-    try {
-      const response = await fetch(`${this.apiBase}/${boardId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+    if (this.edgeKV) {
+      try {
+        const key = this.getWhiteboardKey(boardId);
+        const dataToSave = {
+          ...data,
+          timestamp: new Date().toISOString(),
+          version: '1.0'
+        };
+        
+        // 参考官方示例：let data = await edgeKV.put("put_string", "string_value")
+        // if (data === undefined) { return "EdgeKV put success\n"; }
+        const result = await this.edgeKV.put(key, JSON.stringify(dataToSave));
+        
+        if (result === undefined) {
+          console.log('EdgeKV put success');
+          return { success: true, message: 'EdgeKV put success' };
+        } else {
+          console.warn('EdgeKV put failed');
+          return { success: false, message: 'EdgeKV put failed' };
+        }
+      } catch (e) {
+        console.error('EdgeKV put error:', e);
+        return this.saveToLocalStorage(data, boardId);
       }
-
-      const result = await response.json();
-      console.log('白板数据保存成功到 EdgeKV');
-      return result;
-    } catch (error) {
-      console.error('保存白板数据失败，降级到 localStorage:', error);
-      // 降级到 localStorage (网络失败或开发环境)
+    } else {
+      // 本地开发环境，使用 localStorage
       return this.saveToLocalStorage(data, boardId);
     }
   }
 
-  // 加载白板数据 (通过 HTTP API 调用边缘函数)
+  // 加载白板数据（参考官方示例）
   async loadWhiteboard(boardId = 'default') {
-    try {
-      const response = await fetch(`${this.apiBase}/${boardId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
+    if (this.edgeKV) {
+      try {
+        const key = this.getWhiteboardKey(boardId);
+        
+        // 参考官方示例：使用 get 方法，key 不存在时返回 undefined
+        const result = await this.edgeKV.get(key, { type: "text" });
+        
+        if (result === undefined) {
+          console.log('EdgeKV 中没有数据');
+          return this.getDefaultData();
+        } else {
+          const data = JSON.parse(result);
+          console.log('EdgeKV get success');
+          return data;
         }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      } catch (e) {
+        console.error('EdgeKV get error:', e);
+        return this.loadFromLocalStorage(boardId);
       }
-
-      const data = await response.json();
-      console.log('从 EdgeKV 加载白板数据成功');
-      return data;
-    } catch (error) {
-      console.error('加载白板数据失败，降级到 localStorage:', error);
-      // 降级到 localStorage (网络失败或开发环境)
+    } else {
+      // 本地开发环境，使用 localStorage
       return this.loadFromLocalStorage(boardId);
     }
   }
 
-  // 删除白板数据 (通过 HTTP API 调用边缘函数)
+  // 删除白板数据（参考官方示例）
   async deleteWhiteboard(boardId = 'default') {
-    try {
-      const response = await fetch(`${this.apiBase}/${boardId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
+    if (this.edgeKV) {
+      try {
+        const key = this.getWhiteboardKey(boardId);
+        
+        // 参考官方示例：delete 成功返回 true，失败返回 false
+        const result = await this.edgeKV.delete(key);
+        
+        if (result === true) {
+          console.log('EdgeKV delete success');
+          return { success: true, message: 'EdgeKV delete success' };
+        } else {
+          console.warn('EdgeKV delete failed');
+          return { success: false, message: 'EdgeKV delete failed' };
         }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      } catch (e) {
+        console.error('EdgeKV delete error:', e);
+        return this.deleteFromLocalStorage(boardId);
       }
-
-      const result = await response.json();
-      console.log('白板数据删除成功');
-      return result;
-    } catch (error) {
-      console.error('删除白板数据失败，降级到 localStorage:', error);
-      // 降级到 localStorage (网络失败或开发环境)
+    } else {
+      // 本地开发环境，使用 localStorage
       return this.deleteFromLocalStorage(boardId);
     }
   }
@@ -97,7 +128,7 @@ class ESAStorageAPI {
     };
   }
 
-  // ========== 本地存储降级方案 (网络失败或开发环境) ==========
+  // ========== 本地存储降级方案（本地开发环境） ==========
   
   // 保存到 localStorage
   saveToLocalStorage(data, boardId = 'default') {

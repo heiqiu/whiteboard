@@ -10,12 +10,6 @@
   "runtime": {
     "node_version": "18"
   },
-  "routes": [
-    {
-      "path": "/api/whiteboard/*",
-      "function": "functions/_middleware.js"
-    }
-  ],
   "env": {
     "ESA_NAMESPACE": "whiteboard"
   }
