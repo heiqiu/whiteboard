@@ -63,7 +63,6 @@ import WhiteboardToolbar from './components/WhiteboardToolbar.vue';
 import StickyNote from './components/StickyNote.vue';
 import WhiteboardSection from './components/WhiteboardSection.vue';
 import ColorPickerDialog from './components/ColorPickerDialog.vue';
-import { saveWhiteboard, loadWhiteboard } from './services/esaApi.js';
 import { useWhiteboardData } from './composables/useWhiteboardData.js';
 import { useDrag } from './composables/useDrag.js';
 import { useResize } from './composables/useResize.js';
@@ -80,7 +79,8 @@ export default {
     ColorPickerDialog
   },
   setup() {
-    // 白板 ID
+    // API 路径（调用边缘函数）
+    const API_BASE = '/api/whiteboard';
     const DEFAULT_BOARD_ID = 'default';
 
     // 使用对话框
@@ -111,12 +111,24 @@ export default {
       getDataSnapshot
     } = useWhiteboardData();
 
-    // 保存回调函数（直接调用内部 API 函数）
+    // 保存回调函数（调用边缘函数 API）
     const saveCallback = async () => {
       const dataToSave = getDataSnapshot();
       try {
-        // ✅ 直接调用导出的 API 函数（不是 HTTP）
-        const result = await saveWhiteboard(dataToSave, DEFAULT_BOARD_ID);
+        // 调用边缘函数（functions/api.js）
+        const response = await fetch(`${API_BASE}/${DEFAULT_BOARD_ID}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(dataToSave)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
         console.log('白板数据已保存:', result.message);
       } catch (error) {
         console.error('保存失败:', error);
@@ -139,11 +151,17 @@ export default {
     // 使用调整大小功能
     const { startResize } = useResize(triggerAutoSave);
 
-    // 加载数据（直接调用内部 API 函数）
+    // 加载数据（调用边缘函数 API）
     const loadWhiteboardData = async () => {
       try {
-        // ✅ 直接调用导出的 API 函数（不是 HTTP）
-        const data = await loadWhiteboard(DEFAULT_BOARD_ID);
+        // 调用边缘函数（functions/api.js）
+        const response = await fetch(`${API_BASE}/${DEFAULT_BOARD_ID}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
         
         if (data.notes && data.notes.length > 0 || data.sections && data.sections.length > 0) {
           loadData(data);

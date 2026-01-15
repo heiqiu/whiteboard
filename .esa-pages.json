@@ -12,5 +12,11 @@
   },
   "env": {
     "ESA_NAMESPACE": "whiteboard"
-  }
+  },
+  "routes": [
+    {
+      "path": "/api/whiteboard/*",
+      "function": "functions/api.js"
+    }
+  ]
 }
