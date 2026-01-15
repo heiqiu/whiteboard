@@ -12,6 +12,7 @@ export function useWhiteboardData() {
   const sections = ref([]);
   const nextNoteId = ref(INITIAL_IDS.note);
   const nextSectionId = ref(INITIAL_IDS.section);
+  const version = ref(0); // 添加版本号状态
 
   // 计算属性 - 独立便签(不在任何区域内的)
   const standaloneNotes = computed(() => {
@@ -115,6 +116,7 @@ export function useWhiteboardData() {
     sections.value = data.sections || [];
     nextNoteId.value = data.nextNoteId || getMaxId(notes.value) + 1;
     nextSectionId.value = data.nextSectionId || getMaxId(sections.value) + 1;
+    version.value = data.version || 0; // 加载版本号
   };
 
   /**
@@ -136,6 +138,7 @@ export function useWhiteboardData() {
       sections: [...sections.value],
       nextNoteId: nextNoteId.value,
       nextSectionId: nextSectionId.value,
+      version: version.value, // 包含版本号
       lastUpdated: new Date().toISOString()
     };
   };
@@ -156,6 +159,7 @@ export function useWhiteboardData() {
     sections,
     nextNoteId,
     nextSectionId,
+    version, // 导出版本号
     standaloneNotes,
     
     // 方法

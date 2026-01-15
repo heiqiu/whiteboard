@@ -10,22 +10,35 @@
       <el-button 
         type="info" 
         @click="$emit('save')" 
-        :disabled="saving"
-        :loading="saving"
+        :disabled="saving || checkingConflict"
+        :loading="saving || checkingConflict"
         :icon="Upload"
       >
-        {{ saving ? '保存中...' : '保存到云端' }}
+        {{ checkingConflict ? '检查冲突...' : (saving ? '保存中...' : '保存到云端') }}
       </el-button>
       <el-tag v-if="lastSaved" type="success" effect="plain" size="large">
         <el-icon><CircleCheck /></el-icon>
         最后保存: {{ lastSaved }}
+      </el-tag>
+      <el-divider direction="vertical" v-if="localVersion > 0" />
+      <el-tag v-if="localVersion > 0" type="primary" effect="plain" size="large">
+        <el-icon><Document /></el-icon>
+        版本: v{{ localVersion }}
+      </el-tag>
+      <el-tag v-if="hasConflict" type="warning" effect="dark" size="large">
+        <el-icon><Warning /></el-icon>
+        有未解决冲突
+      </el-tag>
+      <el-tag v-if="conflictCount > 0 && !hasConflict" type="info" effect="plain" size="large">
+        <el-icon><InfoFilled /></el-icon>
+        上次合并: {{ conflictCount }} 个冲突
       </el-tag>
     </el-space>
   </div>
 </template>
 
 <script>
-import { Edit, Grid, Upload, CircleCheck } from '@element-plus/icons-vue';
+import { Edit, Grid, Upload, CircleCheck, Document, Warning, InfoFilled } from '@element-plus/icons-vue';
 
 export default {
   name: 'WhiteboardToolbar',
@@ -37,6 +50,22 @@ export default {
     lastSaved: {
       type: String,
       default: ''
+    },
+    checkingConflict: {
+      type: Boolean,
+      default: false
+    },
+    localVersion: {
+      type: Number,
+      default: 0
+    },
+    hasConflict: {
+      type: Boolean,
+      default: false
+    },
+    conflictCount: {
+      type: Number,
+      default: 0
     }
   },
   emits: ['create-note', 'create-section', 'save'],
@@ -45,7 +74,10 @@ export default {
       Edit,
       Grid,
       Upload,
-      CircleCheck
+      CircleCheck,
+      Document,
+      Warning,
+      InfoFilled
     };
   }
 };

@@ -9,8 +9,5 @@
   },
   "runtime": {
     "node_version": "18"
-  },
-  "env": {
-    "ESA_NAMESPACE": "whiteboard"
   }
 }

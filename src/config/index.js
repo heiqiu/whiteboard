@@ -3,12 +3,6 @@
  * 统一管理应用的配置项和常量
  */
 
-// ESA EdgeKV 配置
-export const ESA_CONFIG = {
-  namespace: import.meta.env.VITE_ESA_NAMESPACE || 'whiteboard',
-  defaultBoardId: 'default'
-};
-
 // 白板默认配置
 export const WHITEBOARD_CONFIG = {
   defaultNotes: [
