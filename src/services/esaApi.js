@@ -1,6 +1,8 @@
 // ESA 边缘存储 API 服务
-// EdgeKV 必须在 fetch 上下文中使用
-// Vue 应用直接调用这些函数（非 HTTP）
+// 调用已部署的独立边缘函数 wbkv
+
+// 边缘函数 URL
+const EDGE_FUNCTION_URL = 'https://wbkv.25fa773a.er.aliyun-esa.net';
 
 // 辅助函数：生成存储 Key
 function getWhiteboardKey(boardId = 'default') {
@@ -18,48 +20,69 @@ function getDefaultData() {
   };
 }
 
-// ========== EdgeKV API 函数（在 fetch 上下文中执行） ==========
+// ========== 调用独立边缘函数 wbkv 的 API ==========
 
 // 保存白板数据
 export async function saveWhiteboard(data, boardId = 'default') {
-  // 在函数内部创建 EdgeKV（确保在 fetch 调用链中）
-  const edgeKV = new EdgeKV({ namespace: "whiteboard" });
   const key = getWhiteboardKey(boardId);
-  
-  const dataToSave = {
+  const value = JSON.stringify({
     ...data,
     timestamp: new Date().toISOString(),
     version: '1.0'
-  };
+  });
   
-  await edgeKV.put(key, JSON.stringify(dataToSave));
-  return { success: true, message: 'Saved successfully' };
+  try {
+    const response = await fetch(`${EDGE_FUNCTION_URL}/put?key=${encodeURIComponent(key)}&value=${encodeURIComponent(value)}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to save: ${response.statusText}`);
+    }
+    
+    return { success: true, message: 'Saved successfully' };
+  } catch (error) {
+    console.error('保存失败:', error);
+    throw error;
+  }
 }
 
 // 加载白板数据
 export async function loadWhiteboard(boardId = 'default') {
-  // 在函数内部创建 EdgeKV（确保在 fetch 调用链中）
-  const edgeKV = new EdgeKV({ namespace: "whiteboard" });
   const key = getWhiteboardKey(boardId);
   
-  let value = await edgeKV.get(key, { type: "text" });
-  
-  if (value === undefined) {
-    return getDefaultData();
-  } else {
+  try {
+    const response = await fetch(`${EDGE_FUNCTION_URL}/get?key=${encodeURIComponent(key)}`);
+    
+    if (response.status === 404) {
+      // Key 不存在，返回默认数据
+      return getDefaultData();
+    }
+    
+    if (!response.ok) {
+      throw new Error(`Failed to load: ${response.statusText}`);
+    }
+    
+    const value = await response.text();
     return JSON.parse(value);
+  } catch (error) {
+    console.error('加载失败:', error);
+    throw error;
   }
 }
 
 // 删除白板数据
 export async function deleteWhiteboard(boardId = 'default') {
-  // 在函数内部创建 EdgeKV（确保在 fetch 调用链中）
-  const edgeKV = new EdgeKV({ namespace: "whiteboard" });
   const key = getWhiteboardKey(boardId);
   
-  const result = await edgeKV.delete(key);
-  return { 
-    success: result === true, 
-    message: result === true ? 'Deleted successfully' : 'Delete failed' 
-  };
+  try {
+    const response = await fetch(`${EDGE_FUNCTION_URL}/delete?key=${encodeURIComponent(key)}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to delete: ${response.statusText}`);
+    }
+    
+    return { success: true, message: 'Deleted successfully' };
+  } catch (error) {
+    console.error('删除失败:', error);
+    throw error;
+  }
 }
