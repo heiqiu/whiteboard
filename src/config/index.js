@@ -9,12 +9,6 @@ export const ESA_CONFIG = {
   defaultBoardId: 'default'
 };
 
-// 自动保存配置
-export const AUTO_SAVE_CONFIG = {
-  debounceDelay: 3000,      // 防抖延迟 (毫秒)
-  intervalDelay: 5 * 60 * 1000  // 定期保存间隔 (毫秒)
-};
-
 // 白板默认配置
 export const WHITEBOARD_CONFIG = {
   defaultNotes: [

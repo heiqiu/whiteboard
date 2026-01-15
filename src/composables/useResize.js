@@ -4,7 +4,7 @@
  */
 import { WHITEBOARD_CONFIG } from '../config';
 
-export function useResize(onResizeEnd) {
+export function useResize() {
   /**
    * 开始调整大小
    */
@@ -35,11 +35,6 @@ export function useResize(onResizeEnd) {
     const handleMouseUp = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
-      
-      // 触发调整大小结束回调
-      if (onResizeEnd) {
-        onResizeEnd();
-      }
     };
 
     document.addEventListener('mousemove', handleMouseMove);

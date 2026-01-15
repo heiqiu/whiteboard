@@ -6,7 +6,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { calculatePosition, clamp } from '../utils/whiteboard';
 import { WHITEBOARD_CONFIG } from '../config';
 
-export function useDrag(onDragEnd) {
+export function useDrag() {
   // 拖拽状态
   const draggingElement = ref(null);
   const dragType = ref(null); // 'note' or 'section'
@@ -131,11 +131,6 @@ export function useDrag(onDragEnd) {
       draggingElement.value = null;
       dragType.value = null;
       sectionNotes.value = [];
-      
-      // 触发拖拽结束回调
-      if (onDragEnd) {
-        onDragEnd();
-      }
     }
   };
 

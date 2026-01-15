@@ -58,7 +58,7 @@
 </template>
 
 <script>
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import WhiteboardToolbar from './components/WhiteboardToolbar.vue';
 import StickyNote from './components/StickyNote.vue';
 import WhiteboardSection from './components/WhiteboardSection.vue';
@@ -67,7 +67,7 @@ import { saveWhiteboard, loadWhiteboard } from './services/esaApi.js';
 import { useWhiteboardData } from './composables/useWhiteboardData.js';
 import { useDrag } from './composables/useDrag.js';
 import { useResize } from './composables/useResize.js';
-import { useAutoSave } from './composables/useAutoSave.js';
+
 import { useDialog } from './composables/useDialog.js';
 import { ESA_CONFIG } from './config';
 
@@ -111,6 +111,10 @@ export default {
       getDataSnapshot
     } = useWhiteboardData();
 
+    // 手动保存状态
+    const saving = ref(false);
+    const lastSaved = ref('');
+
     // 保存回调函数（调用独立边缘函数 wbkv）
     const saveCallback = async () => {
       const dataToSave = getDataSnapshot();
@@ -130,14 +134,33 @@ export default {
       }
     };
 
-    // 使用自动保存
-    const { saving, lastSaved, triggerAutoSave, manualSave } = useAutoSave(saveCallback);
+    // 手动保存
+    const manualSave = async () => {
+      if (saving.value) return;
+      
+      saving.value = true;
+      try {
+        await saveCallback();
+        lastSaved.value = new Date().toLocaleString('zh-CN', {
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+      } catch (error) {
+        console.error('保存失败:', error);
+        throw error;
+      } finally {
+        saving.value = false;
+      }
+    };
 
     // 使用拖拽功能
-    const { startDragNote, startDragSection } = useDrag(triggerAutoSave);
+    const { startDragNote, startDragSection } = useDrag();
 
     // 使用调整大小功能
-    const { startResize } = useResize(triggerAutoSave);
+    const { startResize } = useResize();
 
     // 加载数据（调用独立边缘函数 wbkv）
     const loadWhiteboardData = async () => {
@@ -176,13 +199,11 @@ export default {
       
       if (color !== null) {
         createNote({ color });
-        triggerAutoSave();
       }
     };
 
     const handleCreateSection = () => {
       createSection();
-      triggerAutoSave();
     };
 
     const handleDeleteNote = async (noteId) => {
@@ -195,7 +216,6 @@ export default {
       
       if (confirmed) {
         deleteNote(noteId);
-        triggerAutoSave();
       }
     };
 
@@ -209,7 +229,6 @@ export default {
       
       if (confirmed) {
         deleteSection(sectionId);
-        triggerAutoSave();
       }
     };
 
@@ -224,7 +243,6 @@ export default {
       
       if (newContent !== null) {
         updateNote(noteId, { content: newContent });
-        triggerAutoSave();
       }
     };
 
@@ -238,7 +256,6 @@ export default {
       
       if (newTitle !== null && newTitle.trim() !== '') {
         updateSection(sectionId, { title: newTitle.trim() });
-        triggerAutoSave();
       }
     };
 
